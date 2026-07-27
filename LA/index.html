@@ -6,128 +6,58 @@
     <title>ระบบจัดการคำศัพท์ (Admin) - LiberalArtsRSU</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --grape: #6C5CE7;
-            --grass: #2ED9A6;
-            --coral: #FF6B6B;
-            --cream: #FFF7E8;
-            --ink:   #2D2A32;
-        }
         body {
             font-family: 'Kanit', sans-serif;
-            background-color: var(--cream);
-            color: var(--ink);
+            background-color: #FFF7E8;
+            color: #2D2A32;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
         }
         .card {
             background: #fff;
             padding: 30px;
             border-radius: 24px;
-            border: 3px solid var(--ink);
-            box-shadow: 6px 6px 0 var(--ink);
+            border: 3px solid #2D2A32;
+            box-shadow: 6px 6px 0 #2D2A32;
             max-width: 500px;
             width: 100%;
+            text-align: center;
         }
-        h2 { margin-top: 0; color: var(--grape); }
-        p { color: #666; font-size: 14px; line-height: 1.5; }
-        textarea {
+        h2 { color: #6C5CE7; margin-top: 0; }
+        p { color: #666; font-size: 15px; line-height: 1.6; }
+        .btn {
+            display: block;
             width: 100%;
-            height: 150px;
-            border: 2px solid var(--ink);
-            border-radius: 12px;
-            padding: 12px;
-            font-family: 'Kanit', sans-serif;
-            font-size: 16px;
-            box-sizing: border-box;
-            resize: vertical;
-            outline: none;
-        }
-        textarea:focus { border-color: var(--grape); }
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        button {
-            flex: 1;
-            padding: 12px;
+            padding: 14px;
+            margin-top: 12px;
             font-family: 'Kanit', sans-serif;
             font-size: 16px;
             font-weight: bold;
-            border: 2px solid var(--ink);
+            border: 2px solid #2D2A32;
             border-radius: 12px;
             cursor: pointer;
-            box-shadow: 2px 2px 0 var(--ink);
-            transition: transform 0.1s;
+            box-shadow: 3px 3px 0 #2D2A32;
+            text-decoration: none;
+            box-sizing: border-box;
         }
-        button:active { transform: translate(2px, 2px); box-shadow: none; }
-        .btn-save { background-color: var(--grass); color: #fff; }
-        .btn-game { background-color: var(--grape); color: #fff; }
+        .btn-sheet { background-color: #2ED9A6; color: #fff; }
+        .btn-game { background-color: #6C5CE7; color: #fff; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>⚙️ เมนูแอดมินจัดการคำศัพท์</h2>
-    <p>พิมพ์คำศัพท์ภาษาอังกฤษ A-Z คั่นด้วยเครื่องหมายจุลภาค ( , ) หรือกดขึ้นบรรทัดใหม่ก็ได้ครับ<br><b>ตัวอย่าง:</b> CAT, DOG, BIRD, FISH</p>
+    <p>กดปุ่มด้านล่างเพื่อเปิด Google Sheets และพิมพ์คำศัพท์เพิ่มหรือลบในคอลัมน์ A ได้เลยครับ (คำศัพท์จะอัปเดตไปที่หน้าเล่นเกมของเด็กทุกคนทันที)</p>
     
-    <textarea id="wordInput" placeholder="ใส่คำศัพท์ที่นี่..."></textarea>
+    <a href="https://docs.google.com/spreadsheets/d/16BJGnDFSjwjIFT57SI5vy0vt0-kVt1DKndFMLw9R_FU/edit?usp=sharing" target="_blank" class="btn btn-sheet">📝 เปิดตารางแก้คำศัพท์ (Google Sheets)</a>
     
-    <div class="btn-group">
-        <button class="btn-save" onclick="saveWords()">💾 บันทึกคำศัพท์</button>
-        <button class="btn-game" onclick="goToGame()">🎮 ไปหน้าเล่นเกม</button>
-    </div>
+    <a href="../" class="btn btn-game">🎮 ไปหน้าเล่นเกม</a>
 </div>
-
-<script>
-    const DEFAULT_WORDS = ["CAT", "DOG", "BIRD", "FISH", "LION", "ELEPHANT"];
-
-    // โหลดคำศัพท์เดิมมาแสดงใน Textarea
-    function loadExistingWords() {
-        const saved = localStorage.getItem('rsu_hangman_words');
-        const words = saved ? JSON.parse(saved) : DEFAULT_WORDS;
-        document.getElementById('wordInput').value = words.join(', ');
-    }
-
-    // บันทึกคำศัพท์ลง LocalStorage (แก้ไขระบบแยกคำศัพท์ให้รองรับ , และ การขึ้นบรรทัดใหม่)
-    function saveWords() {
-        const text = document.getElementById('wordInput').value;
-        
-        // แยกคำด้วย , หรือ การขึ้นบรรทัดใหม่
-        const rawWords = text.split(/,|\n/);
-        const cleaned = [];
-
-        for (let word of rawWords) {
-            // ลบช่องว่าง และเปลี่ยนเป็นตัวพิมพ์ใหญ่
-            const trimmed = word.trim().toUpperCase();
-            // เก็บเฉพาะคำที่เป็นภาษาอังกฤษ A-Z เท่านั้น
-            if (/^[A-Z]+$/.test(trimmed)) {
-                cleaned.push(trimmed);
-            }
-        }
-
-        if (cleaned.length === 0) {
-            alert('⚠️ กรุณาใส่คำศัพท์ภาษาอังกฤษ A-Z อย่างน้อย 1 คำ (ห้ามมีตัวเลขหรือภาษาไทย)');
-            return;
-        }
-
-        localStorage.setItem('rsu_hangman_words', JSON.stringify(cleaned));
-        alert(`✅ บันทึกสำเร็จแล้วทั้งหมด ${cleaned.length} คำ!`);
-    }
-
-    // แก้ไขลิงก์กลับหน้าเล่นเกมให้ตรงกับ GitHub Pages
-    function goToGame() {
-        window.location.href = "../";
-    }
-
-    loadExistingWords();
-</script>
 
 </body>
 </html>
