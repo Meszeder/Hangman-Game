@@ -167,7 +167,6 @@
             40%, 80% { transform: translateX(6px); }
         }
 
-        /* ------------------ Effect Styles ------------------ */
         .firework-particle {
             position: fixed;
             width: 8px;
@@ -229,13 +228,16 @@
         </svg>
     </div>
 
-    <div id="word-display">_ _ _ _</div>
+    <div id="word-display">กำลังดึงคำศัพท์...</div>
     <div id="message"></div>
     <div id="next-round-box" style="margin-top: 14px;"></div>
     <div id="keyboard"></div>
 </div>
 
 <script>
+    // 🔗 ลิงก์ CSV จาก Google Sheets ของคุณ
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzcFVHycixHqBfqsOm5c0HRg8Rqxc9wyChGT7uKLgF5GQt8jDiEXlUOvxfkNzuiEOtwmeifmUpKRid/pub?output=csv";
+
     const DEFAULT_WORDS = ["CAT", "DOG", "BIRD", "FISH", "LION", "ELEPHANT"];
     let wordList = [];
     let secretWord = "";
@@ -243,6 +245,31 @@
     let wrongGuesses = 0;
     let streak = 0;
     const maxWrong = 7;
+
+    async function loadWordsFromSheet() {
+        try {
+            const res = await fetch(SHEET_CSV_URL + "&t=" + new Date().getTime());
+            const text = await res.text();
+            
+            const rawWords = text.split(/\r?\n/);
+            const cleaned = [];
+
+            for (let word of rawWords) {
+                const trimmed = word.replace(/"/g, '').trim().toUpperCase();
+                if (/^[A-Z]+$/.test(trimmed)) {
+                    cleaned.push(trimmed);
+                }
+            }
+
+            if (cleaned.length > 0) {
+                wordList = cleaned;
+            } else {
+                wordList = [...DEFAULT_WORDS];
+            }
+        } catch (e) {
+            wordList = [...DEFAULT_WORDS];
+        }
+    }
 
     function createKeyboard() {
         const keyboard = document.getElementById('keyboard');
@@ -258,31 +285,21 @@
         }
     }
 
-    // เริ่มรอบใหม่: ดึงคำศัพท์ล่าสุดทุกครั้งที่กดเริ่ม
-    function startRound() {
-        // ดึงข้อมูลคำศัพท์ที่แอดมินเพิ่งบันทึกมาสดๆ ร้อนๆ
-        const saved = localStorage.getItem('rsu_hangman_words');
-        if (saved) {
-            wordList = JSON.parse(saved);
-        } else {
-            wordList = [...DEFAULT_WORDS];
-        }
+    async function startRound() {
+        await loadWordsFromSheet();
 
         if (wordList.length === 0) return;
 
-        // สุ่มคำใหม่แบบไม่ให้ซ้ำคำเดิม (ถ้ามีคำในระบบมากกว่า 1 คำ)
         let newWord = secretWord;
         if (wordList.length > 1) {
             while (newWord === secretWord) {
                 newWord = wordList[Math.floor(Math.random() * wordList.length)];
             }
         } else {
-            // ถ้าแอดมินใส่มาคำเดียว ก็ต้องยอมให้ซ้ำครับ
             newWord = wordList[0];
         }
         secretWord = newWord;
 
-        // ล้างค่าของรอบเก่า
         guessedLetters = [];
         wrongGuesses = 0;
         document.getElementById('mascot').innerText = '😃';
@@ -345,7 +362,6 @@
                 document.getElementById('streak').innerText = `🔥 ต่อเนื่อง: ${streak}`;
                 document.getElementById('mascot').innerText = '😭';
                 
-                // เฉลยคำศัพท์ที่ถูกต้องเมื่อแพ้
                 document.getElementById('message').innerText = `❌ เสียใจด้วย! เฉลยคำว่า: ${secretWord}`;
                 document.getElementById('message').className = 'lose';
                 document.getElementById('word-display').innerText = secretWord.split('').join(' ');
@@ -371,7 +387,6 @@
         box.appendChild(btn);
     }
 
-    /* ------------------ เอฟเฟกต์พลุ (เมื่อชนะ) ------------------ */
     function triggerFireworks() {
         const colors = ['#FFC93C', '#FF6B6B', '#38BDF8', '#2ED9A6', '#6C5CE7'];
         for (let i = 0; i < 3; i++) {
@@ -398,7 +413,6 @@
         }
     }
 
-    /* ------------------ เอฟเฟกต์ความเศร้า (เมื่อแพ้) ------------------ */
     function triggerSadEffect() {
         const sadEmojis = ['💧', '😭', '💔', '🌧️'];
         for (let i = 0; i < 25; i++) {
@@ -414,7 +428,6 @@
         }
     }
 
-    // เริ่มเกมครั้งแรก
     startRound();
 </script>
 
