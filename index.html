@@ -36,6 +36,8 @@
             align-items: center;
             padding: 32px 16px 60px;
             color: var(--ink);
+            position: relative;
+            overflow: hidden;
         }
 
         h2.title {
@@ -56,6 +58,8 @@
             text-align: center;
             max-width: 520px;
             width: 100%;
+            position: relative;
+            z-index: 10;
         }
 
         .top-bar {
@@ -121,27 +125,76 @@
             border: 2.5px solid var(--grape);
             border-radius: 10px;
             cursor: pointer;
+            transition: transform 0.1s ease;
         }
 
+        .key:active:not(:disabled) { transform: translateY(2px); }
         .key:disabled { opacity: 0.5; cursor: not-allowed; }
         .key.correct { background-color: #D6F7EC; border-color: var(--grass); color: #1AA179; }
         .key.wrong   { background-color: #FFE3E3; border-color: var(--coral); color: var(--coral); }
 
         #message { font-size: 18px; font-weight: 700; margin-top: 18px; }
-        .win { color: #1AA179; }
-        .lose { color: var(--coral); }
+        .win { color: #1AA179; animation: pop 0.4s ease; }
+        .lose { color: var(--coral); animation: shake 0.4s ease; }
 
-        button.btn-action {
+        button.btn-next {
             font-family: 'Kanit', sans-serif;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 28px;
+            font-size: 18px;
+            font-weight: 700;
             background-color: var(--sun);
             color: var(--ink);
             border: 3px solid var(--ink);
-            border-radius: 14px;
+            border-radius: 16px;
             cursor: pointer;
-            box-shadow: 3px 3px 0 var(--ink);
+            box-shadow: 4px 4px 0 var(--ink);
+            animation: pop 0.3s ease;
+            transition: transform 0.1s ease;
+        }
+
+        button.btn-next:hover { transform: translateY(-2px); }
+        button.btn-next:active { transform: translateY(2px); box-shadow: 2px 2px 0 var(--ink); }
+
+        @keyframes pop {
+            0% { transform: scale(0.7); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* ------------------ Effect Styles ------------------ */
+        .firework-particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 999;
+            animation: explode 1s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        .sad-drop {
+            position: fixed;
+            top: -30px;
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 999;
+            animation: fall 2s linear forwards;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
         }
     </style>
 </head>
@@ -178,7 +231,7 @@
 
     <div id="word-display">_ _ _ _</div>
     <div id="message"></div>
-    <div id="next-round-box" style="margin-top: 10px;"></div>
+    <div id="next-round-box" style="margin-top: 14px;"></div>
     <div id="keyboard"></div>
 </div>
 
@@ -190,17 +243,6 @@
     let wrongGuesses = 0;
     let streak = 0;
     const maxWrong = 7;
-
-    // ดึงคำศัพท์ล่าสุดจาก LocalStorage
-    function fetchWords() {
-        const saved = localStorage.getItem('rsu_hangman_words');
-        if (saved) {
-            wordList = JSON.parse(saved);
-        } else {
-            wordList = [...DEFAULT_WORDS];
-        }
-        startRound();
-    }
 
     function createKeyboard() {
         const keyboard = document.getElementById('keyboard');
@@ -216,13 +258,36 @@
         }
     }
 
+    // เริ่มรอบใหม่: ดึงคำศัพท์ล่าสุดทุกครั้งที่กดเริ่ม
     function startRound() {
+        // ดึงข้อมูลคำศัพท์ที่แอดมินเพิ่งบันทึกมาสดๆ ร้อนๆ
+        const saved = localStorage.getItem('rsu_hangman_words');
+        if (saved) {
+            wordList = JSON.parse(saved);
+        } else {
+            wordList = [...DEFAULT_WORDS];
+        }
+
         if (wordList.length === 0) return;
 
-        secretWord = wordList[Math.floor(Math.random() * wordList.length)];
+        // สุ่มคำใหม่แบบไม่ให้ซ้ำคำเดิม (ถ้ามีคำในระบบมากกว่า 1 คำ)
+        let newWord = secretWord;
+        if (wordList.length > 1) {
+            while (newWord === secretWord) {
+                newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            }
+        } else {
+            // ถ้าแอดมินใส่มาคำเดียว ก็ต้องยอมให้ซ้ำครับ
+            newWord = wordList[0];
+        }
+        secretWord = newWord;
+
+        // ล้างค่าของรอบเก่า
         guessedLetters = [];
         wrongGuesses = 0;
+        document.getElementById('mascot').innerText = '😃';
         document.getElementById('message').innerText = '';
+        document.getElementById('message').className = '';
         document.getElementById('next-round-box').innerHTML = '';
 
         for (let i = 1; i <= maxWrong; i++) {
@@ -251,10 +316,12 @@
         if (isWin && secretWord.length > 0) {
             streak++;
             document.getElementById('streak').innerText = `🔥 ต่อเนื่อง: ${streak}`;
-            document.getElementById('message').innerText = '🎉 เก่งมาก! คุณชนะแล้ว!';
+            document.getElementById('mascot').innerText = '🥳';
+            document.getElementById('message').innerText = '🎉 เก่งมาก! ทายถูกแล้ว!';
             document.getElementById('message').className = 'win';
             disableAllKeys();
             showNextRoundButton();
+            triggerFireworks();
         }
     }
 
@@ -276,11 +343,16 @@
             if (wrongGuesses === maxWrong) {
                 streak = 0;
                 document.getElementById('streak').innerText = `🔥 ต่อเนื่อง: ${streak}`;
-                document.getElementById('message').innerText = `❌ แพ้แล้ว! คำที่ถูกต้องคือ: ${secretWord}`;
+                document.getElementById('mascot').innerText = '😭';
+                
+                // เฉลยคำศัพท์ที่ถูกต้องเมื่อแพ้
+                document.getElementById('message').innerText = `❌ เสียใจด้วย! เฉลยคำว่า: ${secretWord}`;
                 document.getElementById('message').className = 'lose';
                 document.getElementById('word-display').innerText = secretWord.split('').join(' ');
+                
                 disableAllKeys();
                 showNextRoundButton();
+                triggerSadEffect();
             }
         }
     }
@@ -291,14 +363,59 @@
 
     function showNextRoundButton() {
         const box = document.getElementById('next-round-box');
+        box.innerHTML = '';
         const btn = document.createElement('button');
-        btn.className = 'btn-action';
-        btn.innerText = '🔁 เล่นรอบใหม่';
+        btn.className = 'btn-next';
+        btn.innerText = '➡️ คำถัดไป';
         btn.onclick = startRound;
         box.appendChild(btn);
     }
 
-    fetchWords();
+    /* ------------------ เอฟเฟกต์พลุ (เมื่อชนะ) ------------------ */
+    function triggerFireworks() {
+        const colors = ['#FFC93C', '#FF6B6B', '#38BDF8', '#2ED9A6', '#6C5CE7'];
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const startX = Math.random() * (window.innerWidth - 100) + 50;
+                const startY = Math.random() * (window.innerHeight / 2) + 100;
+
+                for (let p = 0; p < 30; p++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'firework-particle';
+                    particle.style.left = startX + 'px';
+                    particle.style.top = startY + 'px';
+                    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 120 + 40;
+                    particle.style.setProperty('--dx', Math.cos(angle) * speed + 'px');
+                    particle.style.setProperty('--dy', Math.sin(angle) * speed + 'px');
+
+                    document.body.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1000);
+                }
+            }, i * 300);
+        }
+    }
+
+    /* ------------------ เอฟเฟกต์ความเศร้า (เมื่อแพ้) ------------------ */
+    function triggerSadEffect() {
+        const sadEmojis = ['💧', '😭', '💔', '🌧️'];
+        for (let i = 0; i < 25; i++) {
+            setTimeout(() => {
+                const drop = document.createElement('div');
+                drop.className = 'sad-drop';
+                drop.innerText = sadEmojis[Math.floor(Math.random() * sadEmojis.length)];
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.animationDuration = (1.5 + Math.random() * 1) + 's';
+                document.body.appendChild(drop);
+                setTimeout(() => drop.remove(), 2500);
+            }, i * 100);
+        }
+    }
+
+    // เริ่มเกมครั้งแรก
+    startRound();
 </script>
 
 </body>
