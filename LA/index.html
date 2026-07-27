@@ -23,6 +23,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            box-sizing: border-box;
         }
         .card {
             background: #fff;
@@ -34,7 +35,7 @@
             width: 100%;
         }
         h2 { margin-top: 0; color: var(--grape); }
-        p { color: #666; font-size: 14px; }
+        p { color: #666; font-size: 14px; line-height: 1.5; }
         textarea {
             width: 100%;
             height: 150px;
@@ -45,7 +46,9 @@
             font-size: 16px;
             box-sizing: border-box;
             resize: vertical;
+            outline: none;
         }
+        textarea:focus { border-color: var(--grape); }
         .btn-group {
             display: flex;
             gap: 10px;
@@ -61,7 +64,7 @@
             border-radius: 12px;
             cursor: pointer;
             box-shadow: 2px 2px 0 var(--ink);
-            transition: 0.1s;
+            transition: transform 0.1s;
         }
         button:active { transform: translate(2px, 2px); box-shadow: none; }
         .btn-save { background-color: var(--grass); color: #fff; }
@@ -72,7 +75,7 @@
 
 <div class="card">
     <h2>⚙️ เมนูแอดมินจัดการคำศัพท์</h2>
-    <p>พิมพ์คำศัพท์ภาษาอังกฤษ A-Z คั่นด้วยเครื่องหมายจุลภาค ( , ) เช่น: <b>CAT, DOG, BIRD, FISH</b></p>
+    <p>พิมพ์คำศัพท์ภาษาอังกฤษ A-Z คั่นด้วยเครื่องหมายจุลภาค ( , ) หรือกดขึ้นบรรทัดใหม่ก็ได้ครับ<br><b>ตัวอย่าง:</b> CAT, DOG, BIRD, FISH</p>
     
     <textarea id="wordInput" placeholder="ใส่คำศัพท์ที่นี่..."></textarea>
     
@@ -92,24 +95,35 @@
         document.getElementById('wordInput').value = words.join(', ');
     }
 
-    // บันทึกคำศัพท์ลง LocalStorage
+    // บันทึกคำศัพท์ลง LocalStorage (แก้ไขระบบแยกคำศัพท์ให้รองรับ , และ การขึ้นบรรทัดใหม่)
     function saveWords() {
         const text = document.getElementById('wordInput').value;
-        const cleaned = text.split(',')
-                            .map(w => w.trim().toUpperCase())
-                            .filter(w => /^[A-Z]+$/.test(w));
+        
+        // แยกคำด้วย , หรือ การขึ้นบรรทัดใหม่
+        const rawWords = text.split(/,|\n/);
+        const cleaned = [];
+
+        for (let word of rawWords) {
+            // ลบช่องว่าง และเปลี่ยนเป็นตัวพิมพ์ใหญ่
+            const trimmed = word.trim().toUpperCase();
+            // เก็บเฉพาะคำที่เป็นภาษาอังกฤษ A-Z เท่านั้น
+            if (/^[A-Z]+$/.test(trimmed)) {
+                cleaned.push(trimmed);
+            }
+        }
 
         if (cleaned.length === 0) {
-            alert('⚠️ กรุณาใส่คำศัพท์ภาษาอังกฤษ A-Z อย่างน้อย 1 คำ');
+            alert('⚠️ กรุณาใส่คำศัพท์ภาษาอังกฤษ A-Z อย่างน้อย 1 คำ (ห้ามมีตัวเลขหรือภาษาไทย)');
             return;
         }
 
         localStorage.setItem('rsu_hangman_words', JSON.stringify(cleaned));
-        alert('✅ บันทึกคำศัพท์เรียบร้อยแล้ว!');
+        alert(`✅ บันทึกสำเร็จแล้วทั้งหมด ${cleaned.length} คำ!`);
     }
 
+    // แก้ไขลิงก์กลับหน้าเล่นเกมให้ตรงกับ GitHub Pages
     function goToGame() {
-        window.location.href = '/';
+        window.location.href = "../";
     }
 
     loadExistingWords();
