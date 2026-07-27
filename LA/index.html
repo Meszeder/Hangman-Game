@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการคำศัพท์ (Admin) - LiberalArtsRSU</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grape: #6C5CE7;
+            --grass: #2ED9A6;
+            --coral: #FF6B6B;
+            --cream: #FFF7E8;
+            --ink:   #2D2A32;
+        }
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--cream);
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: #fff;
+            padding: 30px;
+            border-radius: 24px;
+            border: 3px solid var(--ink);
+            box-shadow: 6px 6px 0 var(--ink);
+            max-width: 500px;
+            width: 100%;
+        }
+        h2 { margin-top: 0; color: var(--grape); }
+        p { color: #666; font-size: 14px; }
+        textarea {
+            width: 100%;
+            height: 150px;
+            border: 2px solid var(--ink);
+            border-radius: 12px;
+            padding: 12px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid var(--ink);
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 var(--ink);
+            transition: 0.1s;
+        }
+        button:active { transform: translate(2px, 2px); box-shadow: none; }
+        .btn-save { background-color: var(--grass); color: #fff; }
+        .btn-game { background-color: var(--grape); color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>⚙️ เมนูแอดมินจัดการคำศัพท์</h2>
+    <p>พิมพ์คำศัพท์ภาษาอังกฤษ A-Z คั่นด้วยเครื่องหมายจุลภาค ( , ) เช่น: <b>CAT, DOG, BIRD, FISH</b></p>
+    
+    <textarea id="wordInput" placeholder="ใส่คำศัพท์ที่นี่..."></textarea>
+    
+    <div class="btn-group">
+        <button class="btn-save" onclick="saveWords()">💾 บันทึกคำศัพท์</button>
+        <button class="btn-game" onclick="goToGame()">🎮 ไปหน้าเล่นเกม</button>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_WORDS = ["CAT", "DOG", "BIRD", "FISH", "LION", "ELEPHANT"];
+
+    // โหลดคำศัพท์เดิมมาแสดงใน Textarea
+    function loadExistingWords() {
+        const saved = localStorage.getItem('rsu_hangman_words');
+        const words = saved ? JSON.parse(saved) : DEFAULT_WORDS;
+        document.getElementById('wordInput').value = words.join(', ');
+    }
+
+    // บันทึกคำศัพท์ลง LocalStorage
+    function saveWords() {
+        const text = document.getElementById('wordInput').value;
+        const cleaned = text.split(',')
+                            .map(w => w.trim().toUpperCase())
+                            .filter(w => /^[A-Z]+$/.test(w));
+
+        if (cleaned.length === 0) {
+            alert('⚠️ กรุณาใส่คำศัพท์ภาษาอังกฤษ A-Z อย่างน้อย 1 คำ');
+            return;
+        }
+
+        localStorage.setItem('rsu_hangman_words', JSON.stringify(cleaned));
+        alert('✅ บันทึกคำศัพท์เรียบร้อยแล้ว!');
+    }
+
+    function goToGame() {
+        window.location.href = '/';
+    }
+
+    loadExistingWords();
+</script>
+
+</body>
+</html>
